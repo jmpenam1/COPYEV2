@@ -65,57 +65,58 @@ if uploaded_file is not None:
 
     st.markdown(f"Mostrando **{len(df_filtered)}** de **{len(df)}** jugadores según los filtros seleccionados.")
 
-    # --- Pestañas para organizar el contenido ---
-    tab1, tab2, tab3, tab4 = st.tabs(["Visión General", "Análisis de Rendimiento", "Análisis Financiero", "🤖 Agente IA"])
+# --- Pestañas para organizar el contenido ---
+tab1, tab2, tab3, tab4 = st.tabs(["🤖 Agente IA", "Visión General", "Análisis de Rendimiento", "Análisis Financiero"])
 
-    with tab1:
-        st.header("Visión General de los Datos Seleccionados")
-        st.dataframe(df_filtered)
-        st.header("Correlación de Métricas")
-        st.pyplot(plot_correlation_heatmap(df_filtered))
+with tab1:
+    st.header("Asistente de Scouting con IA")
+    st.info("El agente analizará el conjunto de datos **filtrado actualmente** para darte recomendaciones específicas.")
+    
+    api_key_input = st.text_input("Introduce tu API Key de Groq", type="password", value=GROQ_API_KEY or "")
+    
+    if not api_key_input:
+        st.warning("Se necesita una API Key de Groq para usar el agente.")
+    else:
+        summary = get_dynamic_eda_summary(df_filtered)
+        st.markdown("#### Resumen para el Agente:")
+        with st.expander("Ver el resumen que recibirá la IA"):
+            st.text(summary)
 
-    with tab2:
-        st.header("Análisis de Rendimiento")
-        col1, col2 = st.columns(2)
-        with col1:
-            st.pyplot(plot_top_players(df_filtered, 'Goals', 'Top 10 Goleadores'))
-        with col2:
-            st.pyplot(plot_top_players(df_filtered, 'Assists', 'Top 10 Asistidores'))
-        st.pyplot(plot_top_players(df_filtered, 'Performance', 'Top 10 por Rendimiento Total'))
-
-    with tab3:
-        st.header("Análisis Financiero y de Eficiencia")
-        col1, col2 = st.columns(2)
-        with col1:
-            st.pyplot(plot_value_distribution(df_filtered))
-        with col2:
-            st.pyplot(plot_top_players(df_filtered, 'Market Value', 'Top 10 Jugadores más Valiosos'))
-        st.header("Análisis de Eficiencia (Moneyball)")
-        st.pyplot(plot_efficiency_scatter(df_filtered))
-
-    with tab4:
-        st.header("Asistente de Scouting con IA")
-        st.info("El agente analizará el conjunto de datos **filtrado actualmente** para darte recomendaciones específicas.")
+        user_question = st.text_area("Haz una pregunta específica sobre los jugadores seleccionados:", height=100)
         
-        api_key_input = st.text_input("Introduce tu API Key de Groq", type="password", value=GROQ_API_KEY or "")
-        
-        if not api_key_input:
-            st.warning("Se necesita una API Key de Groq para usar el agente.")
-        else:
-            summary = get_dynamic_eda_summary(df_filtered)
-            st.markdown("#### Resumen para el Agente:")
-            with st.expander("Ver el resumen que recibirá la IA"):
-                st.text(summary)
+        if st.button("Consultar al Agente"):
+            if user_question:
+                with st.spinner("El Director Deportivo está analizando los datos..."):
+                    response = get_agent_response(api_key_input, summary, user_question)
+                    st.success(response)
+            else:
+                st.warning("Por favor, introduce una pregunta.")
 
-            user_question = st.text_area("Haz una pregunta específica sobre los jugadores seleccionados:", height=100)
-            
-            if st.button("Consultar al Agente"):
-                if user_question:
-                    with st.spinner("El Director Deportivo está analizando los datos..."):
-                        response = get_agent_response(api_key_input, summary, user_question)
-                        st.success(response)
-                else:
-                    st.warning("Por favor, introduce una pregunta.")
+with tab2:
+    st.header("Visión General de los Datos Seleccionados")
+    st.dataframe(df_filtered)
+    st.header("Correlación de Métricas")
+    st.pyplot(plot_correlation_heatmap(df_filtered))
+
+with tab3:
+    st.header("Análisis de Rendimiento")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.pyplot(plot_top_players(df_filtered, 'Goals', 'Top 10 Goleadores'))
+    with col2:
+        st.pyplot(plot_top_players(df_filtered, 'Assists', 'Top 10 Asistidores'))
+    st.pyplot(plot_top_players(df_filtered, 'Performance', 'Top 10 por Rendimiento Total'))
+
+with tab4:
+    st.header("Análisis Financiero y de Eficiencia")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.pyplot(plot_value_distribution(df_filtered))
+    with col2:
+        st.pyplot(plot_top_players(df_filtered, 'Market Value', 'Top 10 Jugadores más Valiosos'))
+    st.header("Análisis de Eficiencia (Moneyball)")
+    st.pyplot(plot_efficiency_scatter(df_filtered))
+
 
 else:
     st.info("Por favor, sube un archivo CSV para comenzar el análisis.")
